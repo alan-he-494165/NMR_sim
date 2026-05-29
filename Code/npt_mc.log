@@ -1,0 +1,4 @@
+MC Step     Time     Epot[eV]     Move Statistics
+0      13:05:28 -32489.89540         Initializing
+4      13:05:41 -32488.68285             move:HMC          accepted:4         attempted:4         dt_fs:1.000                    
+8      13:05:52 -32488.33217             move:HMC          accepted:8         attempted:8         dt_fs:1.000                    
