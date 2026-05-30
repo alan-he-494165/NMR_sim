@@ -17,6 +17,23 @@ MODEL_PATH = Path("../mace_model/MACE-omol-0-extra-large-1024.model")
 INIT_PATH = Path("trial_init.xyz")
 OPT_PATH = Path("../Structure/trial.xyz")
 
+def write_mc_trajectory():
+    if dyn.last_accepted_config is None:
+        return
+    atoms_i = dyn.last_accepted_config
+    with Trajectory(str(TRAJ_FILE), mode="a") as traj:
+        traj.write(atoms_i)
+
+    symbols = atoms_i.get_chemical_symbols()
+    positions = atoms_i.get_positions()
+    energy = dyn.calculator_results.get("energy", float("nan"))
+    step = dyn.nsteps
+    with open(MULTIXYZ_FILE, "a", encoding="ascii") as f:
+        f.write(f"{len(symbols)}\n")
+        f.write(f"mc_step={step} energy_eV={energy:.10f}\n")
+        for sym, (x, y, z) in zip(symbols, positions):
+            f.write(f"{sym} {x:.10f} {y:.10f} {z:.10f}\n")
+
 if not MODEL_PATH.exists():
     raise FileNotFoundError(f"Model file not found: {MODEL_PATH.resolve()}")
 
@@ -28,7 +45,7 @@ RESTART = False
 LOG_FILE = Path("npt_mc.log")
 TRAJ_FILE = Path("npt_mc.traj")
 MULTIXYZ_FILE = Path("npt_mc_multi.xyz")
-RUN_STEPS = 10
+RUN_STEPS = 10000
 
 if not Skip_opt:
     if not INIT_PATH.exists():
@@ -85,23 +102,6 @@ dyn = MonteCarlo(
         logfile=str(LOG_FILE),
         loginterval=4,
     )
-
-def write_mc_trajectory():
-    if dyn.last_accepted_config is None:
-        return
-    atoms_i = dyn.last_accepted_config
-    with Trajectory(str(TRAJ_FILE), mode="a") as traj:
-        traj.write(atoms_i)
-
-    symbols = atoms_i.get_chemical_symbols()
-    positions = atoms_i.get_positions()
-    energy = dyn.calculator_results.get("energy", float("nan"))
-    step = dyn.nsteps
-    with open(MULTIXYZ_FILE, "a", encoding="ascii") as f:
-        f.write(f"{len(symbols)}\n")
-        f.write(f"mc_step={step} energy_eV={energy:.10f}\n")
-        for sym, (x, y, z) in zip(symbols, positions):
-            f.write(f"{sym} {x:.10f} {y:.10f} {z:.10f}\n")
 
 dyn.attach(write_mc_trajectory, interval=4)
 # ASE MonteCarlo.run currently drops the steps argument internally.
